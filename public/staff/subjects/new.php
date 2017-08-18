@@ -2,15 +2,33 @@
 
 require_once('../../../private/initialize.php');
 
-$test = isset($_GET['test']) ? $_GET['test'] : '';
+if(is_post_request()) {
 
-if($test == '404') {
-  error_404();
-} elseif($test == '500') {
-  error_500();
-} elseif($test == 'redirect') {
-  redirect_to(url_for('/staff/subjects/index.php'));
+  $subject = [];
+  $subject['menu_name'] = isset($_POST['menu_name']) ? $_POST['menu_name'] : "";
+  $subject['position'] = isset($_POST['position']) ? $_POST['position'] : "";
+  $subject['visible'] = isset($_POST['visible']) ? $_POST['visible'] : "";
+
+  $result = insert_subject($subject);
+  if($result === true ){
+      $new_id = mysqli_insert_id($db);
+      redirect_to(url_for('/staff/subjects/show.php?id=' . $new_id));
+  } else {
+      $errors = $result;
+  }
+
+
+} else {
+    //display the blank form
 }
+
+$subject_set = find_all_subjects();
+$subject_count = mysqli_num_rows($subject_set) + 1;
+mysqli_free_result($subject_set);
+
+$subject = [];
+$subject['position'] = $subject_count;
+
 ?>
 
 <?php include(SHARED_PATH . '/staff_header.php'); ?>
@@ -19,8 +37,9 @@ if($test == '404') {
 
     <div class="subject new">
       <h1>Create Subject</h1>
+      <?php echo display_errors($errors); ?>
 
-      <form action="<?php echo url_for('/staff/subjects/create.php'); ?>" method="post">
+      <form action="<?php echo url_for('/staff/subjects/new.php'); ?>" method="post">
         <dl>
           <dt>Menu Name</dt>
           <dd><input type="text" name="menu_name" value=""></dd>
@@ -28,7 +47,15 @@ if($test == '404') {
         <dl>
           <dt>Position</dt>
           <dd><select class="" name="position">
-              <option value="1">1</option>
+              <?php
+                for($i=1; $i <= $subject_count; $i++) {
+                    echo "<option value=\"{$i}\"";
+                    if($subject['position'] == $i) {
+                        echo " selected";
+                    }
+                    echo ">{$i}</option>";
+                }
+              ?>
           </select></dd>
         </dl>
         <dl>
